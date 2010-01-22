@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+$: << File.join( File.dirname( __FILE__ ), '..', 'lib' )
+require 'mechazilla'
+
+options = {
+            :url_pattern  => nil,
+            :text_pattern => nil,
+            :output_dir   => nil,
+            :prefix       => nil,
+            :user_agent   => 'Linux Mozilla',
+            :urls         => []
+          }
+
+optparse = OptionParser.new do |opts|
+              opts.banner = "Usage: mechazilla.rb [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
+
+              opts.on '-h', '--help', 'Display Help Page' do
+                puts opts
+                exit
+              end
+
+              opts.on '-o', '--output-dir [OUTPUT_DIR]', 'Output file(s) to a dir.' do |dir|
+                options[:output_dir] = dir
+              end
+              
+              opts.on '-u', '--url-pattern [URL_PATTERN]', Regexp, 'Specify the REGEX pattern for links HREFs' do |regex|
+                options[:url_pattern] = regex
+              end
+
+              opts.on '-t', '--text-pattern [TEXT_PATTERN]', Regexp, 'Specify the REGEX pattern for link text' do |regex|
+                options[:text_pattern] = regex
+              end
+
+              opts.on '-p', '--prefix [PREFIX]', 'Specify the prefix to prepend to all files saved.' do |prefix|
+                options[:prefix] = prefix
+              end
+
+              opts.on '-a', '--user-agent [USER_AGENT]', 'Specify the user agent string. Must be a valid WWW::Mechanize user agent string.' do |ua|
+                options[:user_agent] = ua
+              end
+           end
+
+optparse.parse!
+
+options[:urls] = ARGV
+

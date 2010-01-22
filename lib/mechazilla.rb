@@ -1,6 +1,7 @@
 require 'mechanize'
 require 'optparse'
 require 'uri'
+require 'open-uri'
 require 'progressbar'
 require 'fileutils'
 require 'pathname'
@@ -17,22 +18,58 @@ module MechaZilla
         agent.user_agent_alias = options.delete(:user_agent)
       end
 
-      @search  = options.has_key? :url_pattern ? :urls : :text
-      @pattern = options.delete[:url_pattern] or options.delete[:text_pattern]
-      @prefix  = options.delete[:prefix]
-      @uris    = options.delete[:urls]
-      @output  = Pathname.new(options.delete[:output_dir]).cleanpath.to_s
+      @search   = options[:url_pattern] ? :urls : :text
+      @pattern  = (options.delete(:url_pattern) or options.delete(:text_pattern))
+      @prefix   = options.delete(:prefix)
+      @uris     = options.delete(:urls)
+      @output   = Pathname.new(options.delete(:output_dir)).realpath.to_s
+      @dry_run  = options.delete(:dry_run)
+      @debug    = options.delete(:debug)
+
+      @messages = []
     end
 
     def download
-      retrieve_links.each do |link|
-        #TODO
+      #puts retrieve_uris(@agent).collect(&:to_s);exit#DEBUG
+      uris = retrieve_uris(@agent)
+      pbar = ProgressBar.new("All Downloads", uris.length)
+      uris.each do |uri|
+        filename = "#{@prefix}#{uri.to_s.split('/').last}"
+
+        if @dry_run
+          fake_download(filename, uri)
+        else
+          download_file(filename, uri)
+        end
+
+        pbar.inc
       end
+
+      dump_messages
     end
 
   private
 
-    def retrieve_links(agent)
+    def dump_messages
+      puts @messages.join("\n")
+      @messages.clear
+    end
+
+    def fake_download(filename, uri)
+      @messages << "Dry Run: Would download #{uri.to_s} to path #{File.join(@output, filename)}"
+    end
+
+    def download_file(filename, uri)
+      begin
+        File.open(File.join(@output, filename), 'w') do |file|
+          file.write uri.read
+        end
+      rescue OpenURI::HTTPError => e
+        warn "Warning: error encountered on uri #{uri.to_s}: #{e.message}#{"\n#{e.backtrace.join("\n")}" if @debug}"
+      end
+    end
+
+    def retrieve_uris(agent)
       ret = []
       
       @uris.each do |uri|
@@ -40,9 +77,8 @@ module MechaZilla
           ag.get uri
 
           ag.page.links.each do |link|
-            cmp = @search == :urls ? link.uri : link.text
-            #FIXME see if this works for relatives and if not, create a resolve relative method
-            ret << link if cmp =~ @pattern
+            cmp = (@search == :urls) ? link.uri.to_s : link.text
+            ret << absolutize_link(ag.page.uri, link.uri) if cmp =~ @pattern
           end
         end
       end
@@ -55,8 +91,8 @@ module MechaZilla
     end
 
     def validate_options(options)
-      raise ArgumentError, "Either a URL or Text pattern is required" unless options.has_key? :url_pattern or options.has_key? :text_pattern
-      raise ArgumentError, "Need an output dir" unless options.has_key? :output_dir
+      raise ArgumentError, "Either a URL or Text pattern is required" unless options[:url_pattern] or options[:text_pattern]
+      raise ArgumentError, "Need an output dir" unless options[:output_dir]
 
       options[:urls].collect! {|url|
         begin
@@ -68,6 +104,10 @@ module MechaZilla
       }.compact!
 
       raise ArgumentError, "Need at least 1 valid URL to proceed" if options[:urls].empty?
+    end
+
+    def absolutize_link(page_uri, link_uri)
+      link_uri.relative? ? page_uri.merge(link_uri) : link_uri
     end
   end
 end

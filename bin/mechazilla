@@ -7,40 +7,59 @@ options = {
             :text_pattern => nil,
             :output_dir   => nil,
             :prefix       => nil,
+            :dry_run      => false,
+            :debug        => false,
             :user_agent   => 'Linux Mozilla',
             :urls         => []
           }
 
+          #TODO: quiet mode
 optparse = OptionParser.new do |opts|
-              opts.banner = "Usage: mechazilla.rb [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
+        opts.banner = "Usage: mechazilla.rb [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
 
-              opts.on '-h', '--help', 'Display Help Page' do
-                puts opts
-                exit
-              end
+        opts.on '-h', '--help', 'Display Help Page' do
+          puts opts
+          exit
+        end
 
-              opts.on '-o', '--output-dir [OUTPUT_DIR]', 'Output file(s) to a dir.' do |dir|
-                options[:output_dir] = dir
-              end
-              
-              opts.on '-u', '--url-pattern [URL_PATTERN]', Regexp, 'Specify the REGEX pattern for links HREFs' do |regex|
-                options[:url_pattern] = regex
-              end
+        opts.on '-o', '--output-dir [OUTPUT_DIR]', 'Output file(s) to a dir.' do |dir|
+          options[:output_dir] = dir
+        end
+        
+        opts.on '-u', '--url-pattern [URL_PATTERN]', Regexp, 'Specify the REGEX pattern for links HREFs' do |regex|
+          options[:url_pattern] = regex
+        end
 
-              opts.on '-t', '--text-pattern [TEXT_PATTERN]', Regexp, 'Specify the REGEX pattern for link text' do |regex|
-                options[:text_pattern] = regex
-              end
+        opts.on '-t', '--text-pattern [TEXT_PATTERN]', Regexp, 'Specify the REGEX pattern for link text' do |regex|
+          options[:text_pattern] = regex
+        end
 
-              opts.on '-p', '--prefix [PREFIX]', 'Specify the prefix to prepend to all files saved.' do |prefix|
-                options[:prefix] = prefix
-              end
+        opts.on '-p', '--prefix [PREFIX]', 'Specify the prefix to prepend to all files saved.' do |prefix|
+          options[:prefix] = prefix
+        end
 
-              opts.on '-a', '--user-agent [USER_AGENT]', 'Specify the user agent string. Must be a valid WWW::Mechanize user agent string.' do |ua|
-                options[:user_agent] = ua
-              end
-           end
+        opts.on '-a', '--user-agent [USER_AGENT]', 'Specify the user agent string. Must be a valid WWW::Mechanize user agent string.' do |ua|
+          options[:user_agent] = ua
+        end
+
+        opts.on '-n', '--dry-run', "Print out what URLs would be downloaded and where they'd save, but doesn't download." do |dry|
+          options[:dry_run] = dry
+        end
+
+        opts.on '-d', '--debug', 'Run in debug mode with stack traces.' do
+          options[:debug] = true
+        end
+end
 
 optparse.parse!
 
 options[:urls] = ARGV
 
+$stdout.sync = true#FIXME: ????
+#FIXME: figure out rescues and debugs
+#begin
+  dl = MechaZilla::Downloader.new options
+  dl.download
+#rescue
+
+#end

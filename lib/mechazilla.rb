@@ -62,11 +62,16 @@ module MechaZilla
     def download_file(filename, uri)
       begin
         File.open(File.join(@output, filename), 'w') do |file|
-          file.write uri.read
+          file.write @agent.get(uri, spoof_referrer(uri)).body
         end
-      rescue OpenURI::HTTPError => e
+      rescue OpenURI::HTTPError, SocketError, WWW::Mechanize::ResponseCodeError => e
         warn "Warning: error encountered on uri #{uri.to_s}: #{e.message}#{"\n#{e.backtrace.join("\n")}" if @debug}"
       end
+    end
+
+    def spoof_referrer(uri)
+      up_one = uri.path.to_s.split('/')[0...-1].join('/')
+      WWW::Mechanize::Page.new(URI.parse("#{uri.scheme}://#{uri.host}").merge(up_one), {'content-type' => 'text/html'})
     end
 
     def retrieve_uris(agent)

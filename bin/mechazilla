@@ -15,7 +15,7 @@ options = {
 
           #TODO: quiet mode
 optparse = OptionParser.new do |opts|
-        opts.banner = "Usage: mechazilla.rb [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
+        opts.banner = "Usage: mechazilla [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
 
         opts.on '-h', '--help', 'Display Help Page' do
           puts opts

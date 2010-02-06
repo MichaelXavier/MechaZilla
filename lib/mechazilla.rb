@@ -71,7 +71,7 @@ module MechaZilla
 
     def spoof_referrer(uri)
       up_one = uri.path.to_s.split('/')[0...-1].join('/')
-      WWW::Mechanize::Page.new(URI.parse("#{uri.scheme}://#{uri.host}").merge(up_one), {'content-type' => 'text/html'})
+      WWW::Mechanize::Page.new(URI::Generic.build(:scheme => uri.scheme, :host => uri.host, :port => uri.port)).merge(up_one), {'content-type' => 'text/html'})
     end
 
     def retrieve_uris(agent)

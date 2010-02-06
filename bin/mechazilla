@@ -13,7 +13,7 @@ options = {
             :urls         => []
           }
 
-          #TODO: quiet mode
+          #TODO: quiet mode, throttling, make output dir just be the first arg
 optparse = OptionParser.new do |opts|
         opts.banner = "Usage: mechazilla [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
 

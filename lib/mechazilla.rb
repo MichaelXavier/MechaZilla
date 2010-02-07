@@ -32,7 +32,7 @@ module MechaZilla
 
     def download
       uris = retrieve_uris(@agent)
-      pbar = ProgressBar.new("All Downloads", uris.length) unless @quiet
+      pbar = ProgressBar.new("All Downloads", uris.length) unless @quiet or @dry_run
       uris.each do |uri|
         filename = "#{@prefix}#{uri.to_s.split('/').last}"
 
@@ -45,7 +45,7 @@ module MechaZilla
         pbar.inc unless @quiet
       end
 
-      dump_messages unless @quiet
+      dump_messages unless @quiet or @dry_run
     end
 
   private

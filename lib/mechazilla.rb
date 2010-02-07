@@ -7,7 +7,7 @@ require 'fileutils'
 require 'pathname'
 
 module MechaZilla
-  VERSION = '0.2'
+  VERSION = '1.0'
 
   class Downloader
     
@@ -18,14 +18,15 @@ module MechaZilla
         agent.user_agent_alias = options[:user_agent]
       end
 
-      @search   = options[:url_pattern] ? :urls : :text
-      @pattern  = (options[:url_pattern] or options[:text_pattern])
-      @prefix   = options[:prefix]
-      @uris     = options[:urls]
-      @output   = Pathname.new(options[:output_dir]).realpath.to_s
-      @dry_run  = options[:dry_run]
-      @debug    = options[:debug]
-      @quiet    = options[:quiet]
+      @search     = options[:url_pattern] ? :urls : :text
+      @pattern    = (options[:url_pattern] or options[:text_pattern])
+      @prefix     = options[:prefix]
+      @sleep_secs = options[:sleep_secs]
+      @uris       = options[:urls]
+      @output     = Pathname.new(options[:output_dir]).realpath.to_s
+      @dry_run    = options[:dry_run]
+      @debug      = options[:debug]
+      @quiet      = options[:quiet]
 
       @messages = []
     end
@@ -33,19 +34,21 @@ module MechaZilla
     def download
       uris = retrieve_uris(@agent)
       pbar = ProgressBar.new("All Downloads", uris.length) unless @quiet or @dry_run
-      uris.each do |uri|
+      uris.each_with_index do |uri, i|
         filename = "#{@prefix}#{uri.to_s.split('/').last}"
 
         if @dry_run
           fake_download(filename, uri)
         else
           download_file(filename, uri)
+          # Sleep to throttle the connection and avoid getting B&
+          sleep(@sleep_secs) if @sleep_secs and i < uris.length - 1
         end
 
-        pbar.inc unless @quiet
+        pbar.inc unless @quiet or @dry_run
       end
 
-      dump_messages unless @quiet or @dry_run
+      dump_messages unless @quiet
     end
 
   private

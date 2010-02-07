@@ -7,6 +7,7 @@ options = {
             :text_pattern => nil,
             :output_dir   => nil,
             :prefix       => nil,
+            :sleep_secs   => nil,
             :dry_run      => false,
             :debug        => false,
             :quiet        => false,
@@ -14,7 +15,6 @@ options = {
             :urls         => []
           }
 
-          #TODO: quiet mode, throttling, make output dir just be the first arg
 optparse = OptionParser.new do |opts|
         opts.banner = "Usage: mechazilla [OPTIONS] OUTPUT_DIR url1 [url2] [...]"
 
@@ -34,6 +34,10 @@ optparse = OptionParser.new do |opts|
 
         opts.on '-t', '--text-pattern [TEXT_PATTERN]', Regexp, 'Specify the REGEX pattern for link text' do |regex|
           options[:text_pattern] = regex
+        end
+
+        opts.on '-s', '--sleep [SLEEP_SECS]', Integer, 'Specify the number of seconds to sleep between downloads for throttling.' do |secs|
+          options[:sleep_secs] = (secs > 0) ? secs : nil
         end
 
         opts.on '-p', '--prefix [PREFIX]', 'Specify the prefix to prepend to all files saved.' do |prefix|
@@ -62,8 +66,7 @@ optparse.parse!
 options[:output_dir] = ARGV.shift
 options[:urls] = ARGV
 
-$stdout.sync = true#FIXME: ????
-#FIXME: figure out rescues and debugs
+$stdout.sync = true # Seems to be fewer problems this way.
 begin
   dl = MechaZilla::Downloader.new options
   dl.download

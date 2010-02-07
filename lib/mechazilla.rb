@@ -7,7 +7,7 @@ require 'fileutils'
 require 'pathname'
 
 module MechaZilla
-  VERSION = '0.1a'
+  VERSION = '0.2'
 
   class Downloader
     
@@ -15,24 +15,24 @@ module MechaZilla
       validate_options(options)
 
       @agent = WWW::Mechanize.new do |agent| 
-        agent.user_agent_alias = options.delete(:user_agent)
+        agent.user_agent_alias = options[:user_agent]
       end
 
       @search   = options[:url_pattern] ? :urls : :text
-      @pattern  = (options.delete(:url_pattern) or options.delete(:text_pattern))
-      @prefix   = options.delete(:prefix)
-      @uris     = options.delete(:urls)
-      @output   = Pathname.new(options.delete(:output_dir)).realpath.to_s
-      @dry_run  = options.delete(:dry_run)
-      @debug    = options.delete(:debug)
+      @pattern  = (options[:url_pattern] or options[:text_pattern])
+      @prefix   = options[:prefix]
+      @uris     = options[:urls]
+      @output   = Pathname.new(options[:output_dir]).realpath.to_s
+      @dry_run  = options[:dry_run]
+      @debug    = options[:debug]
+      @quiet    = options[:quiet]
 
       @messages = []
     end
 
     def download
-      #puts retrieve_uris(@agent).collect(&:to_s);exit#DEBUG
       uris = retrieve_uris(@agent)
-      pbar = ProgressBar.new("All Downloads", uris.length)
+      pbar = ProgressBar.new("All Downloads", uris.length) unless @quiet
       uris.each do |uri|
         filename = "#{@prefix}#{uri.to_s.split('/').last}"
 
@@ -42,10 +42,10 @@ module MechaZilla
           download_file(filename, uri)
         end
 
-        pbar.inc
+        pbar.inc unless @quiet
       end
 
-      dump_messages
+      dump_messages unless @quiet
     end
 
   private
@@ -65,13 +65,13 @@ module MechaZilla
           file.write @agent.get(uri, spoof_referrer(uri)).body
         end
       rescue OpenURI::HTTPError, SocketError, WWW::Mechanize::ResponseCodeError => e
-        warn "Warning: error encountered on uri #{uri.to_s}: #{e.message}#{"\n#{e.backtrace.join("\n")}" if @debug}"
+        warn "Warning: error encountered on uri #{uri.to_s}: #{e.message}#{"\n#{e.backtrace.join("\n")}" if @debug}" unless @quiet
       end
     end
 
     def spoof_referrer(uri)
       up_one = uri.path.to_s.split('/')[0...-1].join('/')
-      WWW::Mechanize::Page.new(URI::Generic.build(:scheme => uri.scheme, :host => uri.host, :port => uri.port)).merge(up_one), {'content-type' => 'text/html'})
+      WWW::Mechanize::Page.new(URI::Generic.build(:scheme => uri.scheme, :host => uri.host, :port => uri.port).merge(up_one), {'content-type' => 'text/html'})
     end
 
     def retrieve_uris(agent)
@@ -103,7 +103,7 @@ module MechaZilla
         begin
           URI.parse url
         rescue URI::InvalidURIError
-          warn "Warning: url #{url} invalid. Skipping."
+          warn "Warning: url #{url} invalid. Skipping." unless @quiet
           nil
         end
       }.compact!

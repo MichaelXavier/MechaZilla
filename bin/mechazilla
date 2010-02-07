@@ -9,23 +9,25 @@ options = {
             :prefix       => nil,
             :dry_run      => false,
             :debug        => false,
+            :quiet        => false,
             :user_agent   => 'Linux Mozilla',
             :urls         => []
           }
 
           #TODO: quiet mode, throttling, make output dir just be the first arg
 optparse = OptionParser.new do |opts|
-        opts.banner = "Usage: mechazilla [OPTIONS] -o OUTPUT_DIR url1 url2 ..."
+        opts.banner = "Usage: mechazilla [OPTIONS] OUTPUT_DIR url1 [url2] [...]"
 
         opts.on '-h', '--help', 'Display Help Page' do
           puts opts
           exit
         end
 
-        opts.on '-o', '--output-dir [OUTPUT_DIR]', 'Output file(s) to a dir.' do |dir|
-          options[:output_dir] = dir
+        opts.on '-v', '--version', 'Display Version' do
+          puts MechaZilla::VERSION
+          exit
         end
-        
+
         opts.on '-u', '--url-pattern [URL_PATTERN]', Regexp, 'Specify the REGEX pattern for links HREFs' do |regex|
           options[:url_pattern] = regex
         end
@@ -49,17 +51,25 @@ optparse = OptionParser.new do |opts|
         opts.on '-d', '--debug', 'Run in debug mode with stack traces.' do
           options[:debug] = true
         end
+
+        opts.on '-q', '--quiet', 'Run in quiet mode (no output).' do
+          options[:quiet] = true
+        end
 end
 
 optparse.parse!
 
+options[:output_dir] = ARGV.shift
 options[:urls] = ARGV
 
 $stdout.sync = true#FIXME: ????
 #FIXME: figure out rescues and debugs
-#begin
+begin
   dl = MechaZilla::Downloader.new options
   dl.download
-#rescue
+rescue Exception => e
+  warn "Error encountered: #{e.message}#{" #{e.backtrace.join("\n")}" if options[:debug]}" unless options[:quiet]
+  exit 1
+end
 
-#end
+exit 0

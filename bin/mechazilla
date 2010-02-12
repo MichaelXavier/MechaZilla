@@ -10,6 +10,7 @@ options = {
             :sleep_secs   => nil,
             :dry_run      => false,
             :debug        => false,
+            :overwrite    => false,
             :quiet        => false,
             :user_agent   => 'Linux Mozilla',
             :urls         => []
@@ -26,6 +27,10 @@ optparse = OptionParser.new do |opts|
         opts.on '-v', '--version', 'Display Version' do
           puts MechaZilla::VERSION
           exit
+        end
+
+        opts.on '-f', '--force-overwrite', 'Overwrite files when you encounter files with the same name' do
+          options[:overwrite] = true
         end
 
         opts.on '-u', '--url-pattern [URL_PATTERN]', Regexp, 'Specify the REGEX pattern for links HREFs' do |regex|

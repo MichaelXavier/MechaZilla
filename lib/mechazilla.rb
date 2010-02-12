@@ -7,7 +7,7 @@ require 'fileutils'
 require 'pathname'
 
 module MechaZilla
-  VERSION = '1.0'
+  VERSION = '1.0.1'
 
   class Downloader
     
@@ -26,6 +26,7 @@ module MechaZilla
       @output     = Pathname.new(options[:output_dir]).realpath.to_s
       @dry_run    = options[:dry_run]
       @debug      = options[:debug]
+      @overwrite  = options[:overwrite]
       @quiet      = options[:quiet]
 
       @messages = []
@@ -37,10 +38,12 @@ module MechaZilla
       uris.each_with_index do |uri, i|
         filename = "#{@prefix}#{uri.to_s.split('/').last}"
 
-        if @dry_run
+        if !@overwrite and File.exists? destination_file(filename)
+          @messages << "#{"Dry Run: " if @dry_run}Skipping existing file #{filename}"
+        elsif @dry_run
           fake_download(filename, uri)
         else
-          download_file(filename, uri)
+          download_file(filename, uri) 
           # Sleep to throttle the connection and avoid getting B&
           sleep(@sleep_secs) if @sleep_secs and i < uris.length - 1
         end
@@ -59,12 +62,16 @@ module MechaZilla
     end
 
     def fake_download(filename, uri)
-      @messages << "Dry Run: Would download #{uri.to_s} to path #{File.join(@output, filename)}"
+      @messages << "Dry Run: Would download #{uri.to_s} to path #{destination_file(filename)}"
+    end
+
+    def destination_file(filename)
+      File.join(@output, filename)
     end
 
     def download_file(filename, uri)
       begin
-        File.open(File.join(@output, filename), 'w') do |file|
+        File.open(destination_file(filename), 'w') do |file|
           file.write @agent.get(uri, spoof_referrer(uri)).body
         end
       rescue OpenURI::HTTPError, SocketError, WWW::Mechanize::ResponseCodeError => e

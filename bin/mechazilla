@@ -49,7 +49,7 @@ optparse = OptionParser.new do |opts|
           options[:prefix] = prefix
         end
 
-        opts.on '-a', '--user-agent [USER_AGENT]', 'Specify the user agent string. Must be a valid WWW::Mechanize user agent string.' do |ua|
+        opts.on '-a', '--user-agent [USER_AGENT]', 'Specify the user agent string. Must be a valid Mechanize user agent string.' do |ua|
           options[:user_agent] = ua
         end
 

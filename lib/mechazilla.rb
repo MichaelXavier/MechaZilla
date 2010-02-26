@@ -14,7 +14,7 @@ module MechaZilla
     def initialize(options={})
       validate_options(options)
 
-      @agent = WWW::Mechanize.new do |agent| 
+      @agent = Mechanize.new do |agent| 
         agent.user_agent_alias = options[:user_agent]
       end
 
@@ -74,14 +74,14 @@ module MechaZilla
         File.open(destination_file(filename), 'w') do |file|
           file.write @agent.get(uri, spoof_referrer(uri)).body
         end
-      rescue OpenURI::HTTPError, SocketError, WWW::Mechanize::ResponseCodeError => e
+      rescue OpenURI::HTTPError, SocketError, Mechanize::ResponseCodeError => e
         warn "Warning: error encountered on uri #{uri.to_s}: #{e.message}#{"\n#{e.backtrace.join("\n")}" if @debug}" unless @quiet
       end
     end
 
     def spoof_referrer(uri)
       up_one = uri.path.to_s.split('/')[0...-1].join('/')
-      WWW::Mechanize::Page.new(URI::Generic.build(:scheme => uri.scheme, :host => uri.host, :port => uri.port).merge(up_one), {'content-type' => 'text/html'})
+      Mechanize::Page.new(URI::Generic.build(:scheme => uri.scheme, :host => uri.host, :port => uri.port).merge(up_one), {'content-type' => 'text/html'})
     end
 
     def retrieve_uris(agent)
